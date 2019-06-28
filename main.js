@@ -20,10 +20,39 @@ var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
 var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
 var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-var materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
-var materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0 );
-var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
-var materialShininess = 20.0;
+let mat_jade = {materialAmbient: vec4(0.135, 0.2225, 0.1575, 1.0 ),
+    materialDiffuse: vec4(0.5, 0.89, 0.63, 1.0 ),
+    materialSpecular: vec4( 0.316228, 0.316228,	0.316228, 1.0),
+    materialShininess: 0.1};
+
+let mat_pearl = {materialAmbient: vec4(0.25, 0.20725, 0.20725, 1.0 ),
+    materialDiffuse: vec4(1, 0.829, 0.829, 1.0 ),
+    materialSpecular: vec4(0.296648, 0.296648, 0.296648, 1.0),
+    materialShininess: 0.088};
+
+let mat_ruby = {materialAmbient: vec4(0.1745, 0.01175, 0.01175, 1.0 ),
+    materialDiffuse: vec4(0.61424, 0.04136, 0.04136, 1.0 ),
+    materialSpecular: vec4(0.727811, 0.626959, 0.626959, 1.0),
+    materialShininess: 0.6};
+let mat_brass = {materialAmbient: vec4(0.329412, 0.223529, 0.027451, 1.0 ),
+    materialDiffuse: vec4(0.780392, 0.568627, 0.113725, 1.0 ),
+    materialSpecular: vec4(0.992157, 0.941176, 0.807843, 1.0),
+    materialShininess: 0.21794872};
+
+let mat_chrome = {materialAmbient: vec4(0.25, 0.25, 0.25, 1.0 ),
+    materialDiffuse: vec4(0.4, 0.4, 0.4, 1.0 ),
+    materialSpecular: vec4(0.774597, 0.774597, 0.774597, 1.0),
+    materialShininess: 0.6};
+
+let mat_obsidian = {materialAmbient: vec4(0.05375, 0.05, 0.06625, 1.0 ),
+    materialDiffuse: vec4(0.18275, 0.17, 0.22525, 1.0 ),
+    materialSpecular: vec4(0.332741, 0.328634, 0.346435, 1.0),
+    materialShininess: 0.3};
+
+let mat_turquoise = {materialAmbient: vec4(0.1, 0.18725, 0.1745, 1.0 ),
+    materialDiffuse: vec4(0.396, 0.74151, 0.69102, 1.0 ),
+    materialSpecular: vec4(0.297254, 0.30829, 0.306678, 1.0),
+    materialShininess: 0.1};
 
 let lightMode = 'flat';
 let spotSize = 0.03;
@@ -31,7 +60,38 @@ let spotSize = 0.03;
 // Texture related globals
 let theta = [45.0, 45.0, 45.0];
 let thetaLoc;
+let minT = 0.0;
+let maxT = 1.0;
 
+//Texture coordinates at the corners of a quadrilateral
+let texCoord = [
+    vec2(minT, minT),
+    vec2(minT, maxT),
+    vec2(maxT, maxT),
+    vec2(maxT, minT)
+];
+
+let vertices = [
+    vec4( -0.5, -0.5,  0.5, 1.0 ),
+    vec4( -0.5,  0.5,  0.5, 1.0 ),
+    vec4( 0.5,  0.5,  0.5, 1.0 ),
+    vec4( 0.5, -0.5,  0.5, 1.0 ),
+    vec4( -0.5, -0.5, -0.5, 1.0 ),
+    vec4( -0.5,  0.5, -0.5, 1.0 ),
+    vec4( 0.5,  0.5, -0.5, 1.0 ),
+    vec4( 0.5, -0.5, -0.5, 1.0 )
+];
+
+let vertexColors = [
+    vec4( 0.0, 0.0, 0.0, 1.0 ),  // black
+    vec4( 1.0, 0.0, 0.0, 1.0 ),  // red
+    vec4( 1.0, 1.0, 0.0, 1.0 ),  // yellow
+    vec4( 0.0, 1.0, 0.0, 1.0 ),  // green
+    vec4( 0.0, 0.0, 1.0, 1.0 ),  // blue
+    vec4( 1.0, 0.0, 1.0, 1.0 ),  // magenta
+    vec4( 0.0, 1.0, 1.0, 1.0 ),  // white
+    vec4( 0.0, 1.0, 1.0, 1.0 )   // cyan
+];
 
 function main()
 {
@@ -98,14 +158,14 @@ function main()
     stoneImg.crossOrigin = "";
     stoneImg.src = "https://web.cs.wpi.edu/~jmcuneo/grass.bmp";
     stoneImg.onload = function() {
-        configureTexture(stoneImg, 1);
+        configureTexture(stoneImg, 0);
     };
 
     let grassImg = new Image();
     grassImg.crossOrigin = "";
     grassImg.src = "https://web.cs.wpi.edu/~jmcuneo/stones.bmp";
     grassImg.onload = function() {
-        configureTexture(grassImg, 2);
+        configureTexture(grassImg, 1);
     };
 
     render();
@@ -134,12 +194,13 @@ function render()
     let magentaCube = cube();
     let cube4 = cube();
 
-    let bg_cube = textureCube();
-
-
     let tetra1 = tetrahedron(5);
     let tetra2 = tetrahedron(3);
     let tetra3 = tetrahedron(3);
+
+    let floorPlane = texturePlane();
+    let leftWallPlane = texturePlane();
+    let rightWallPlane = texturePlane();
 
     // set up projection
     pMatrix = perspective(fovy, aspect, .1, 100);
@@ -152,41 +213,6 @@ function render()
     eye = vec3(0.0, 0.0, 15.0);
     mvMatrix = lookAt(eye, at , up);
 
-    let mat_jade = {materialAmbient: vec4(0.135, 0.2225, 0.1575, 1.0 ),
-                    materialDiffuse: vec4(0.5, 0.89, 0.63, 1.0 ),
-                    materialSpecular: vec4( 0.316228, 0.316228,	0.316228, 1.0),
-                    materialShininess: 0.1};
-
-    let mat_pearl = {materialAmbient: vec4(0.25, 0.20725, 0.20725, 1.0 ),
-                    materialDiffuse: vec4(1, 0.829, 0.829, 1.0 ),
-                    materialSpecular: vec4(0.296648, 0.296648, 0.296648, 1.0),
-                    materialShininess: 0.088};
-
-    let mat_ruby = {materialAmbient: vec4(0.1745, 0.01175, 0.01175, 1.0 ),
-                    materialDiffuse: vec4(0.61424, 0.04136, 0.04136, 1.0 ),
-                    materialSpecular: vec4(0.727811, 0.626959, 0.626959, 1.0),
-                    materialShininess: 0.6};
-    let mat_brass = {materialAmbient: vec4(0.329412, 0.223529, 0.027451, 1.0 ),
-                    materialDiffuse: vec4(0.780392, 0.568627, 0.113725, 1.0 ),
-                    materialSpecular: vec4(0.992157, 0.941176, 0.807843, 1.0),
-                    materialShininess: 0.21794872};
-
-    let mat_chrome = {materialAmbient: vec4(0.25, 0.25, 0.25, 1.0 ),
-                    materialDiffuse: vec4(0.4, 0.4, 0.4, 1.0 ),
-                    materialSpecular: vec4(0.774597, 0.774597, 0.774597, 1.0),
-                    materialShininess: 0.6};
-
-    let mat_obsidian = {materialAmbient: vec4(0.05375, 0.05, 0.06625, 1.0 ),
-                    materialDiffuse: vec4(0.18275, 0.17, 0.22525, 1.0 ),
-                    materialSpecular: vec4(0.332741, 0.328634, 0.346435, 1.0),
-                    materialShininess: 0.3};
-
-    let mat_turquoise = {materialAmbient: vec4(0.1, 0.18725, 0.1745, 1.0 ),
-        materialDiffuse: vec4(0.396, 0.74151, 0.69102, 1.0 ),
-        materialSpecular: vec4(0.297254, 0.30829, 0.306678, 1.0),
-        materialShininess: 0.1};
-
-
 
     // mesh transform matrices
     let tetra1InitTransformM =rotateY(tetraRotAngle);
@@ -198,12 +224,20 @@ function render()
     let cube21InitTransformM =rotateY(cube3RotAngle);
     let cube22InitTransformM =rotateY(cube4RotAngle);
 
-    let bgTransformM = mult(mat4(
-        8,0,0,0,
-        0,8,0,0,
-        0,0,8,0,
+    let bgScale = 15;
+    let bgTransformM = mat4(
+        bgScale,0,0,0,
+        0,bgScale,0,0,
+        0,0,bgScale,0,
         0,0,0,1
-    ), rotateY(45));
+    );
+
+    bgTransformM = mult(bgTransformM, translate(0.0, 0.2, 0.0));
+
+    let floorRotateM = rotateY(45);
+    let leftWallRotateM = mult(mult(rotateX(90), rotateZ(-45)), rotateY(90));
+    let rightWallRotateM = mult(mult(rotateX(90), rotateZ(45)), rotateY(90));
+
 
     let hie1X = 0.0;
     let hie1Y = 4.0;
@@ -262,9 +296,23 @@ function render()
 
     transformStack.push(mvMatrix); // matrix 0 saved
         mvMatrix = mult(mvMatrix, bgTransformM);
-        gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-        draw_texture(bg_cube);
+        transformStack.push(mvMatrix); // matrix 1 saved
+            mvMatrix = mult(mvMatrix, floorRotateM);
+            gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
+            draw_texture(floorPlane, 0.0);
+        mvMatrix = transformStack.pop(); // matrix 1 retrieved
 
+        transformStack.push(mvMatrix); // matrix 1 saved
+            mvMatrix = mult(mvMatrix, leftWallRotateM);
+            gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
+            draw_texture(leftWallPlane, 1.0);
+        mvMatrix = transformStack.pop(); // matrix 1 retrieved
+
+        transformStack.push(mvMatrix); // matrix 1 saved
+            mvMatrix = mult(mvMatrix, rightWallRotateM);
+            gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
+            draw_texture(rightWallPlane, 1.0);
+        mvMatrix = transformStack.pop(); // matrix 1 retrieved
 
     mvMatrix = transformStack.pop(); // matrix 1 retrieved
 
@@ -408,7 +456,7 @@ function drawLine(start, end, color) {
 }
 
 // mesh must be a
-function draw_texture(textureMesh) {
+function draw_texture(textureMesh, texNum) {
     /*
     * param: mesh: dictionary object with keys:
     *   points: array of points that make up the mesh
@@ -443,6 +491,7 @@ function draw_texture(textureMesh) {
     // shader Flags
     gl.uniform1i(gl.getUniformLocation(program, "isLighting"), 0);
     gl.uniform1f(gl.getUniformLocation(program, "isTexture"), 1.0);
+    gl.uniform1f(gl.getUniformLocation(program, "texNum"), texNum);
 
     gl.drawArrays( gl.TRIANGLES, 0, textureMesh.pointsArray.length );
 }
@@ -563,7 +612,7 @@ function draw_mat(mesh, material) {
     let specularProduct = mult(lightSpecular, material.materialSpecular);
     let ambientProduct = mult(lightAmbient, material.materialAmbient);
 
-    gl.uniform1f(gl.getUniformLocation(program, "materialShininess"), materialShininess);
+    gl.uniform1f(gl.getUniformLocation(program, "materialShininess"), material.materialShininess);
     gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
     gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
     gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
@@ -621,7 +670,15 @@ function createATexture() {
 
 function configureTexture(image, num) {
     texture = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0);
+    if(num === 0) {
+        gl.activeTexture(gl.TEXTURE0);
+    }
+    else if (num === 1){
+        gl.activeTexture(gl.TEXTURE1);
+    }
+    else {
+        console.log('configureTexture: Unsupported Texture Num')
+    }
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
 

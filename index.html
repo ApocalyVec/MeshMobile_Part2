@@ -29,6 +29,9 @@
     attribute vec2 vTexCoord;
     varying vec2 fTexCoord;
 
+    uniform float texNum;
+    varying float ftexNum;
+
 	void main() {
 
         // texture
@@ -42,6 +45,7 @@
   		gl_PointSize = 10.0;		// Point size
 
         fisTexture = isTexture; // pass flag to the fragment shader
+        ftexNum = texNum;
 
         if (isLighting == 1) {
             vec3 pos = (modelMatrix * vPosition).xyz;
@@ -83,12 +87,22 @@
 	//Texture
     varying float fisTexture;
     varying vec2 fTexCoord;
-    uniform sampler2D texture;
+    varying float ftexNum;
+
+    uniform sampler2D tex0;
+    uniform sampler2D tex1;
 
 	void main()
 	{
         if (fisTexture > 0.5) {
-            gl_FragColor =  texture2D(texture, fTexCoord);	// Point color
+            if (ftexNum == 0.0) {
+                gl_FragColor =  texture2D(tex0, fTexCoord);	// Point color
+
+            }
+            else if (ftexNum == 1.0) {
+                gl_FragColor =  texture2D(tex1, fTexCoord);	// Point color
+
+            }
         }
         else {
             gl_FragColor = fColor;	// Point color
@@ -104,8 +118,9 @@
     <script src="cube.js"></script>
     <script src="tetrahedron.js"></script>
     <script src="textureCube.js"></script>
+    <script src="texturePlane.js"></script>
 
-      <script src="main.js"></script>
+    <script src="main.js"></script>
 
   </head>
  
