@@ -4,7 +4,7 @@
 
 var gl;
 
-var fovy = 45.0;  // Field-of-view in Y direction angle (in degrees)
+var fovy = 40.0;  // Field-of-view in Y direction angle (in degrees)
 var aspect;       // Viewport aspect ratio
 var program;
 
@@ -55,13 +55,13 @@ let mat_turquoise = {materialAmbient: vec4(0.1, 0.18725, 0.1745, 1.0 ),
     materialShininess: 0.1};
 
 let lightMode = 'flat';
-let spotSize = 0.03;
+let spotSize = 0.01;
 
 // Texture related globals
 let theta = [45.0, 45.0, 45.0];
 let thetaLoc;
 let minT = 0.0;
-let maxT = 1.0;
+let maxT = 3.0;
 
 //Texture coordinates at the corners of a quadrilateral
 let texCoord = [
@@ -208,9 +208,9 @@ function render()
 
     // eye coordinates
     let eye;
-    let at = vec3(0.0,0.0, 0.0);
+    let at = vec3(0.0,-.8, -.8);
     let up = vec3(0.0, 1.0, 0.0);
-    eye = vec3(0.0, 0.0, 15.0);
+    eye = vec3(0.0, 6.0, 15.0);
     mvMatrix = lookAt(eye, at , up);
 
 
@@ -252,7 +252,7 @@ function render()
     let hie121Y = -2.4;
     let hie122Y = -3.5;
 
-    let hie1VerArm0 = [vec4(hie1X, 0.0, 0.0, 1.0), vec4(hie1X, hie1Y-5.2, 0.0, 1.0)];
+    let hie1VerArm0 = [vec4(hie1X, 5.0, 0.0, 1.0), vec4(hie1X, hie1Y-5.2, 0.0, 1.0)];
     let hie1HorArm = [vec4(hie11X, hie1Y-5.2, 0.0, 1.0), vec4(hie12X, hie1Y-5.2, 0.0, 1.0)];
     let hie1VerArm1 = [vec4(hie11X, -3.0, 0.0, 1.0), vec4(hie11X, hie1Y-5.2, 0.0, 1.0)];
     let hie1VerArm2 = [vec4(hie12X, -3.0, 0.0, 1.0), vec4(hie12X, hie1Y-5.2, 0.0, 1.0)];
@@ -320,10 +320,10 @@ function render()
     transformStack.push(mvMatrix); // matrix 0 saved
         mvMatrix = mult(mvMatrix, hie1TransM);  // matrix 1  created
         gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-        drawLine(hie1HorArm[0], hie1HorArm[1], vec4(1.0, 0.0, 1.0, 1.0));
-        drawLine(hie1VerArm0[0], hie1VerArm0[1], vec4(1.0, 0.0, 1.0, 1.0));
-        drawLine(hie1VerArm1[0], hie1VerArm1[1], vec4(1.0, 0.0, 1.0, 1.0));
-        drawLine(hie1VerArm2[0], hie1VerArm2[1], vec4(1.0, 0.0, 1.0, 1.0));
+        drawLine(hie1HorArm[0], hie1HorArm[1], vec4(1.0, 1.0, 1.0, 1.0));
+        drawLine(hie1VerArm0[0], hie1VerArm0[1], vec4(1.0, 1.0, 1.0, 1.0));
+        drawLine(hie1VerArm1[0], hie1VerArm1[1], vec4(1.0, 1.0, 1.0, 1.0));
+        drawLine(hie1VerArm2[0], hie1VerArm2[1], vec4(1.0, 1.0, 1.0, 1.0));
         // first hierarchy
         transformStack.push(mvMatrix); // matrix 1 saved
             mvMatrix = mult(mvMatrix, tetra1InitTransformM);
@@ -335,10 +335,10 @@ function render()
         transformStack.push(mvMatrix); // matrix 1 saved
             mvMatrix = mult(mvMatrix, hie11TransM);
             gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-            drawLine(hie11HorArm0[0], hie11HorArm0[1], vec4(1.0, 0.0, 1.0, 1.0));
-            drawLine(hie11VerArm0[0], hie11VerArm0[1], vec4(1.0, 0.0, 1.0, 1.0));
-            drawLine(hie11VerArm1[0], hie11VerArm1[1], vec4(1.0, 0.0, 1.0, 1.0));
-            drawLine(hie12VerArm2[0], hie11VerArm2[1], vec4(1.0, 0.0, 1.0, 1.0));
+            drawLine(hie11HorArm0[0], hie11HorArm0[1], vec4(1.0, 1.0, 1.0, 1.0));
+            drawLine(hie11VerArm0[0], hie11VerArm0[1], vec4(1.0, 1.0, 1.0, 1.0));
+            drawLine(hie11VerArm1[0], hie11VerArm1[1], vec4(1.0, 1.0, 1.0, 1.0));
+            drawLine(hie12VerArm2[0], hie11VerArm2[1], vec4(1.0, 1.0, 1.0, 1.0));
 
             transformStack.push(mvMatrix); //matrix 11 saved
                 mvMatrix = mult(mvMatrix, tetra2InitTransformM);
@@ -373,10 +373,10 @@ function render()
         transformStack.push(mvMatrix); // matrix 1 saved
             mvMatrix = mult(mvMatrix, hie12TransM);
             gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-            drawLine(hie12HorArm0[0], hie12HorArm0[1], vec4(1.0, 0.0, 1.0, 1.0));
-            drawLine(hie12VerArm0[0], hie12VerArm0[1], vec4(1.0, 0.0, 1.0, 1.0));
-            drawLine(hie12VerArm1[0], hie12VerArm1[1], vec4(1.0, 0.0, 1.0, 1.0));
-            drawLine(hie12VerArm2[0], hie12VerArm2[1], vec4(1.0, 0.0, 1.0, 1.0));
+            drawLine(hie12HorArm0[0], hie12HorArm0[1], vec4(1.0, 1.0, 1.0, 1.0));
+            drawLine(hie12VerArm0[0], hie12VerArm0[1], vec4(1.0, 1.0, 1.0, 1.0));
+            drawLine(hie12VerArm1[0], hie12VerArm1[1], vec4(1.0, 1.0, 1.0, 1.0));
+            drawLine(hie12VerArm2[0], hie12VerArm2[1], vec4(1.0, 1.0, 1.0, 1.0));
             transformStack.push(mvMatrix); //matrix 12 saved
                 mvMatrix = mult(mvMatrix, tetra3InitTransformM);
                 gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
@@ -684,8 +684,8 @@ function configureTexture(image, num) {
 
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT );
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);

@@ -14,3 +14,5 @@ reference : http://devernay.free.fr/cours/opengl/materials.html
 ### Main
 The main function is used to setup the WebGL program. It creates callbacks to process user inputs.
 ### 
+
+MaxT is set to avoid distorting the texture image
