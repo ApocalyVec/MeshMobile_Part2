@@ -93,6 +93,11 @@ let vertexColors = [
     vec4( 0.0, 1.0, 1.0, 1.0 )   // cyan
 ];
 
+// shadow globals
+let isShadow = true;
+// shadow logic
+let shadowM;
+
 function main()
 {
 	// Retrieve <canvas> element
@@ -135,12 +140,12 @@ function main()
         if (e.key === 'm') {
             lightMode = 'gourand';
 
-            console.log('using Gouraud lighting ' + lightMode);
+            console.log('using lighting: ' + lightMode);
         }
         if (e.key === 'M') {
             lightMode = 'flat';
 
-            console.log('using Flat lighting' + lightMode);
+            console.log('using lighting: ' + lightMode);
         }
         if (e.key === 'p') {
             spotSize += 0.0001;
@@ -148,10 +153,13 @@ function main()
         if (e.key === 'P') {
             spotSize -= 0.0001;
         }
+        if (e.key === 'a') {
+            isShadow = ! isShadow;
+            console.log('toggling shadow: ' + isShadow);
+        }
     });
 
     // Textures
-
     createATexture();
 
     let stoneImg = new Image();
@@ -160,13 +168,17 @@ function main()
     stoneImg.onload = function() {
         configureTexture(stoneImg, 0);
     };
-
     let grassImg = new Image();
     grassImg.crossOrigin = "";
     grassImg.src = "https://web.cs.wpi.edu/~jmcuneo/stones.bmp";
     grassImg.onload = function() {
         configureTexture(grassImg, 1);
     };
+
+    // shadows logic
+    shadowM = mat4(); // default to an identity matrix
+    shadowM[3][3] = 0;
+    shadowM[3][2] = -1/lightPosition[2];
 
     render();
 }
@@ -328,7 +340,7 @@ function render()
         transformStack.push(mvMatrix); // matrix 1 saved
             mvMatrix = mult(mvMatrix, tetra1InitTransformM);
             gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-            draw_mat(tetra1, mat_pearl);
+            draw_mat(tetra1, mat_pearl, mvMatrix);
 
     mvMatrix = transformStack.pop(); // matrix 1 retrieved
 
@@ -343,7 +355,7 @@ function render()
             transformStack.push(mvMatrix); //matrix 11 saved
                 mvMatrix = mult(mvMatrix, tetra2InitTransformM);
                 gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                draw_mat(tetra2, mat_jade);
+                draw_mat(tetra2, mat_jade, mvMatrix);
 
     mvMatrix = transformStack.pop(); // matrix 11 retrieved
 
@@ -352,7 +364,7 @@ function render()
                     transformStack.push(mvMatrix); // matrix 111 saved
                         mvMatrix = mult(mvMatrix, cube11InitTransformM);
                         gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                        draw_mat(redCube, mat_obsidian);
+                        draw_mat(redCube, mat_obsidian, mvMatrix);
                 mvMatrix = transformStack.pop(); // matrix 111 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 11 retrieved
@@ -364,7 +376,7 @@ function render()
 
                         mvMatrix = mult(mvMatrix, cube12InitTransformM);
                         gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                        draw_mat(magentaCube, mat_chrome);
+                        draw_mat(magentaCube, mat_chrome, mvMatrix);
                 mvMatrix = transformStack.pop(); // matrix 113 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 11 retrieved
@@ -380,7 +392,7 @@ function render()
             transformStack.push(mvMatrix); //matrix 12 saved
                 mvMatrix = mult(mvMatrix, tetra3InitTransformM);
                 gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                draw_mat(tetra3, mat_ruby);
+                draw_mat(tetra3, mat_ruby, mvMatrix);
 
             mvMatrix = transformStack.pop(); // matrix 12 retrieved
 
@@ -391,7 +403,7 @@ function render()
 
                     mvMatrix = mult(mvMatrix, cube21InitTransformM);
                     gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                    draw_mat(blueCube, mat_turquoise);
+                    draw_mat(blueCube, mat_turquoise, mvMatrix);
                 mvMatrix = transformStack.pop(); // matrix 121 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 12 retrieved
@@ -403,7 +415,7 @@ function render()
 
                     mvMatrix = mult(mvMatrix, cube22InitTransformM);
                     gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                    draw_mat(cube4, mat_brass);
+                    draw_mat(cube4, mat_brass, mvMatrix);
                 mvMatrix = transformStack.pop(); // matrix 122 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 12 retrieved
@@ -541,7 +553,7 @@ function draw_color(mesh, color) {
 }
 
 // mesh must be a
-function draw_mat(mesh, material) {
+function draw_mat(mesh, material, modelViewMatrix) {
     /*
     * param: mesh: dictionary object with keys:
     *   points: array of points that make up the mesh
@@ -552,7 +564,7 @@ function draw_mat(mesh, material) {
 
     for(let i = 0; i < mesh.points.length; i++)
     {
-        fragColors.push(vec4(0.0, 0.0, 0.0, 0.0));
+        fragColors.push(vec4(0.0, 0.0, 0.0, 1.0));
         texCoords.push(vec4(0.0, 0.0, 0.0, 0.0));
     }
 
@@ -623,6 +635,28 @@ function draw_mat(mesh, material) {
     gl.uniform1f(gl.getUniformLocation(program, "spotSize"), spotSize);
 
     gl.drawArrays( gl.TRIANGLES, 0, mesh.points.length );
+
+    // draw shadow
+    gl.uniform1i(gl.getUniformLocation(program, "isLighting"), 0);
+
+    let meshShadowM = mat4();
+    meshShadowM = mult(meshShadowM, translate(lightPosition[0], lightPosition[1], lightPosition[2])); // translate the light source to its original position
+    meshShadowM = mult(meshShadowM, shadowM);
+    meshShadowM = mult(meshShadowM, translate(-lightPosition[0], -lightPosition[1], -lightPosition[2]));
+
+    modelViewMatrix = mult(modelViewMatrix, meshShadowM);
+
+
+    gl.uniformMatrix4fv( modelView, false, flatten(modelViewMatrix) );
+    // buffer color
+    cBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fragColors), gl.STATIC_DRAW);
+    vColor= gl.getAttribLocation(program,  "vColor");
+    gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vColor);
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, mesh.points.length);
+
 }
 
 function newell(v1, v2, v3) {
