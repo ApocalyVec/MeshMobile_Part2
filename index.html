@@ -15,20 +15,35 @@
 	attribute vec4 vColor;
 	varying vec4 fColor;
 
+    // lighting
     uniform vec4 ambientProduct, diffuseProduct, specularProduct;
     uniform float materialShininess;
     uniform vec4 lightPosition;
-
-    uniform int isMesh;
+    uniform int isLighting;
     uniform float spotSize;
+
+    // texture
+    uniform vec3 theta;
+    uniform float isTexture;
+    varying float fisTexture;
+    attribute vec2 vTexCoord;
+    varying vec2 fTexCoord;
 
 	void main() {
 
+        // texture
+        // Compute the sines and cosines of theta for each of
+        //   the three axes in one computation.
+        vec3 angles = radians( theta );
+        vec3 c = cos( angles );
+        vec3 s = sin( angles );
 
 		gl_Position = projectionMatrix * modelMatrix * vPosition;	// Point position
   		gl_PointSize = 10.0;		// Point size
 
-        if (isMesh == 1) {
+        fisTexture = isTexture; // pass flag to the fragment shader
+
+        if (isLighting == 1) {
             vec3 pos = (modelMatrix * vPosition).xyz;
 
             vec3 L = normalize(lightPosition.xyz - pos);
@@ -51,8 +66,12 @@
             fColor = ambient + diffuse + specular;
             fColor.a = 1.0;
         }
+        else if (isTexture == 1.0) {
+            fColor = vColor;
+            fTexCoord = vTexCoord;
+        }
         else {
-            fColor = vec4( 1.0, 1.0, 1.0, 1.0 );
+            fColor = vColor;
         }
   	}
 	</script>
@@ -61,9 +80,20 @@
 	precision mediump float;
 	varying vec4 fColor;
 
-	void main() 
+	//Texture
+    varying float fisTexture;
+    varying vec2 fTexCoord;
+    uniform sampler2D texture;
+
+	void main()
 	{
-		gl_FragColor = fColor;	// Point color
+        if (fisTexture > 0.5) {
+            gl_FragColor =  texture2D(texture, fTexCoord);	// Point color
+        }
+        else {
+            gl_FragColor = fColor;	// Point color
+        }
+
   	}
 	</script>
 		
@@ -73,7 +103,7 @@
 
     <script src="cube.js"></script>
     <script src="tetrahedron.js"></script>
-
+    <script src="textureCube.js"></script>
 
       <script src="main.js"></script>
 

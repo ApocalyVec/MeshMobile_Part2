@@ -2,8 +2,6 @@
 // TODO user inputs
 // TODO Extra Credit
 
-var NumVertices  = 36;
-
 var gl;
 
 var fovy = 45.0;  // Field-of-view in Y direction angle (in degrees)
@@ -13,7 +11,6 @@ var program;
 var mvMatrix, pMatrix;
 var modelView, projection;
 
-let initModelMatrix;
 
 let transformStack = [];
 
@@ -29,8 +26,13 @@ var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialShininess = 20.0;
 
 let lightMode = 'flat';
+let spotSize = 0.03;
 
-let spotSize = 0.01;
+// Texture related globals
+let theta = [45.0, 45.0, 45.0];
+let thetaLoc;
+
+
 function main()
 {
 	// Retrieve <canvas> element
@@ -59,15 +61,13 @@ function main()
 
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
-    gl.cullFace(gl.BACK);
 
     projection = gl.getUniformLocation(program, "projectionMatrix");
     modelView = gl.getUniformLocation(program, "modelMatrix");
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-
-
+    // Input callbacks
     gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
 
     window.addEventListener("keypress", function(e) {
@@ -89,6 +89,24 @@ function main()
             spotSize -= 0.0001;
         }
     });
+
+    // Textures
+
+    createATexture();
+
+    let stoneImg = new Image();
+    stoneImg.crossOrigin = "";
+    stoneImg.src = "https://web.cs.wpi.edu/~jmcuneo/grass.bmp";
+    stoneImg.onload = function() {
+        configureTexture(stoneImg, 1);
+    };
+
+    let grassImg = new Image();
+    grassImg.crossOrigin = "";
+    grassImg.src = "https://web.cs.wpi.edu/~jmcuneo/stones.bmp";
+    grassImg.onload = function() {
+        configureTexture(grassImg, 2);
+    };
 
     render();
 }
@@ -115,6 +133,9 @@ function render()
     let blueCube = cube();
     let magentaCube = cube();
     let cube4 = cube();
+
+    let bg_cube = textureCube();
+
 
     let tetra1 = tetrahedron(5);
     let tetra2 = tetrahedron(3);
@@ -177,6 +198,13 @@ function render()
     let cube21InitTransformM =rotateY(cube3RotAngle);
     let cube22InitTransformM =rotateY(cube4RotAngle);
 
+    let bgTransformM = mult(mat4(
+        8,0,0,0,
+        0,8,0,0,
+        0,0,8,0,
+        0,0,0,1
+    ), rotateY(45));
+
     let hie1X = 0.0;
     let hie1Y = 4.0;
 
@@ -230,33 +258,44 @@ function render()
             let hie122TransM= mult(translate(1.0, hie122Y, 0.0), rotateY(0));
 
     //Hierarchy modeling
+    gl.cullFace(gl.FRONT);
+
+    transformStack.push(mvMatrix); // matrix 0 saved
+        mvMatrix = mult(mvMatrix, bgTransformM);
+        gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
+        draw_texture(bg_cube);
+
+
+    mvMatrix = transformStack.pop(); // matrix 1 retrieved
+
+    gl.cullFace(gl.BACK);
     transformStack.push(mvMatrix); // matrix 0 saved
         mvMatrix = mult(mvMatrix, hie1TransM);  // matrix 1  created
         gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-        drawLine(hie1HorArm[0], hie1HorArm[1]);
-        drawLine(hie1VerArm0[0], hie1VerArm0[1]);
-        drawLine(hie1VerArm1[0], hie1VerArm1[1]);
-        drawLine(hie1VerArm2[0], hie1VerArm2[1]);
+        drawLine(hie1HorArm[0], hie1HorArm[1], vec4(1.0, 0.0, 1.0, 1.0));
+        drawLine(hie1VerArm0[0], hie1VerArm0[1], vec4(1.0, 0.0, 1.0, 1.0));
+        drawLine(hie1VerArm1[0], hie1VerArm1[1], vec4(1.0, 0.0, 1.0, 1.0));
+        drawLine(hie1VerArm2[0], hie1VerArm2[1], vec4(1.0, 0.0, 1.0, 1.0));
         // first hierarchy
         transformStack.push(mvMatrix); // matrix 1 saved
             mvMatrix = mult(mvMatrix, tetra1InitTransformM);
             gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-            draw(tetra1, mat_pearl);
+            draw_mat(tetra1, mat_pearl);
 
     mvMatrix = transformStack.pop(); // matrix 1 retrieved
 
         transformStack.push(mvMatrix); // matrix 1 saved
             mvMatrix = mult(mvMatrix, hie11TransM);
             gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-            drawLine(hie11HorArm0[0], hie11HorArm0[1]);
-            drawLine(hie11VerArm0[0], hie11VerArm0[1]);
-            drawLine(hie11VerArm1[0], hie11VerArm1[1]);
-            drawLine(hie12VerArm2[0], hie11VerArm2[1]);
+            drawLine(hie11HorArm0[0], hie11HorArm0[1], vec4(1.0, 0.0, 1.0, 1.0));
+            drawLine(hie11VerArm0[0], hie11VerArm0[1], vec4(1.0, 0.0, 1.0, 1.0));
+            drawLine(hie11VerArm1[0], hie11VerArm1[1], vec4(1.0, 0.0, 1.0, 1.0));
+            drawLine(hie12VerArm2[0], hie11VerArm2[1], vec4(1.0, 0.0, 1.0, 1.0));
 
             transformStack.push(mvMatrix); //matrix 11 saved
                 mvMatrix = mult(mvMatrix, tetra2InitTransformM);
                 gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                draw(tetra2, mat_jade);
+                draw_mat(tetra2, mat_jade);
 
     mvMatrix = transformStack.pop(); // matrix 11 retrieved
 
@@ -265,7 +304,7 @@ function render()
                     transformStack.push(mvMatrix); // matrix 111 saved
                         mvMatrix = mult(mvMatrix, cube11InitTransformM);
                         gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                        draw(redCube, mat_obsidian);
+                        draw_mat(redCube, mat_obsidian);
                 mvMatrix = transformStack.pop(); // matrix 111 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 11 retrieved
@@ -277,7 +316,7 @@ function render()
 
                         mvMatrix = mult(mvMatrix, cube12InitTransformM);
                         gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                        draw(magentaCube, mat_chrome);
+                        draw_mat(magentaCube, mat_chrome);
                 mvMatrix = transformStack.pop(); // matrix 113 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 11 retrieved
@@ -286,14 +325,14 @@ function render()
         transformStack.push(mvMatrix); // matrix 1 saved
             mvMatrix = mult(mvMatrix, hie12TransM);
             gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-            drawLine(hie12HorArm0[0], hie12HorArm0[1]);
-            drawLine(hie12VerArm0[0], hie12VerArm0[1]);
-            drawLine(hie12VerArm1[0], hie12VerArm1[1]);
-            drawLine(hie12VerArm2[0], hie12VerArm2[1]);
+            drawLine(hie12HorArm0[0], hie12HorArm0[1], vec4(1.0, 0.0, 1.0, 1.0));
+            drawLine(hie12VerArm0[0], hie12VerArm0[1], vec4(1.0, 0.0, 1.0, 1.0));
+            drawLine(hie12VerArm1[0], hie12VerArm1[1], vec4(1.0, 0.0, 1.0, 1.0));
+            drawLine(hie12VerArm2[0], hie12VerArm2[1], vec4(1.0, 0.0, 1.0, 1.0));
             transformStack.push(mvMatrix); //matrix 12 saved
                 mvMatrix = mult(mvMatrix, tetra3InitTransformM);
                 gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                draw(tetra3, mat_ruby);
+                draw_mat(tetra3, mat_ruby);
 
             mvMatrix = transformStack.pop(); // matrix 12 retrieved
 
@@ -304,7 +343,7 @@ function render()
 
                     mvMatrix = mult(mvMatrix, cube21InitTransformM);
                     gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                    draw(blueCube, mat_turquoise);
+                    draw_mat(blueCube, mat_turquoise);
                 mvMatrix = transformStack.pop(); // matrix 121 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 12 retrieved
@@ -316,7 +355,7 @@ function render()
 
                     mvMatrix = mult(mvMatrix, cube22InitTransformM);
                     gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                    draw(cube4, mat_brass);
+                    draw_mat(cube4, mat_brass);
                 mvMatrix = transformStack.pop(); // matrix 122 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 12 retrieved
@@ -326,10 +365,14 @@ function render()
 
 }
 
-function drawLine(start, end) {
+function drawLine(start, end, color) {
     let points = [];
     points.push(start);
     points.push(end);
+
+    let fragColors = [];
+    fragColors.push(color);
+    fragColors.push(color);
 
     let normals = [];
     normals.push(start[0], start[1], start[0], 0.0);
@@ -350,54 +393,121 @@ function drawLine(start, end) {
     gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vNormal);
 
-    gl.uniform1i(gl.getUniformLocation(program, "isMesh"), 0);
+    // buffer color
+    let cBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fragColors), gl.STATIC_DRAW);
+    let vColor= gl.getAttribLocation(program,  "vColor");
+    gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vColor);
+
+    gl.uniform1i(gl.getUniformLocation(program, "isLighting"), 0);
+    gl.uniform1f(gl.getUniformLocation(program, "isTexture"), 0.0);
+
     gl.drawArrays( gl.LINES, 0, points.length );
 }
 
-function drawTriangle(p1, p2, p3) {
-    let points = [];
-    points.push(p1);
-    points.push(p2);
-    points.push(p3);
-
-    let normals = [];
-    normals.push(p1[0], p1[1], p1[0], 0.0);
-    normals.push(p2[0], p2[1], p2[0], 0.0);
-    normals.push(p3[0], p3[1], p3[0], 0.0);
-
-    let pBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW);
-    let vPosition = gl.getAttribLocation(program,  "vPosition");
-    gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vPosition);
-
-    let nBuffer = gl.createBuffer();
-    gl.bindBuffer( gl.ARRAY_BUFFER, nBuffer);
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW );
-    let vNormal = gl.getAttribLocation( program, "vNormal" );
-    gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
-    gl.enableVertexAttribArray( vNormal);
-
-    gl.uniform1i(gl.getUniformLocation(program, "isMesh"), 0);
-    gl.drawArrays( gl.TRIANGLES, 0, points.length );
-}
-
 // mesh must be a
-function draw(mesh, material) {
+function draw_texture(textureMesh) {
     /*
     * param: mesh: dictionary object with keys:
     *   points: array of points that make up the mesh
     *   normals: array of normals of the mesh
      */
-    // let fragColors = [];
-    //
-    // for(let i = 0; i < mesh.points.length; i++)
-    // {
-    //     fragColors.push(color);
-    // }
 
-    if (lightMode == 'flat') {
+    // buffer vertices
+    let pBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(textureMesh.pointsArray), gl.STATIC_DRAW);
+    let vPosition = gl.getAttribLocation(program,  "vPosition");
+    gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPosition);
+
+    // buffer color
+    let cBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(textureMesh.colorsArray), gl.STATIC_DRAW);
+    let vColor= gl.getAttribLocation(program,  "vColor");
+    gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vColor);
+
+    // buffer Texture
+    let tBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, tBuffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(textureMesh.texCoordsArray), gl.STATIC_DRAW );
+
+    let vTexCoord = gl.getAttribLocation( program, "vTexCoord" );
+    gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vTexCoord );
+
+    // shader Flags
+    gl.uniform1i(gl.getUniformLocation(program, "isLighting"), 0);
+    gl.uniform1f(gl.getUniformLocation(program, "isTexture"), 1.0);
+
+    gl.drawArrays( gl.TRIANGLES, 0, textureMesh.pointsArray.length );
+}
+
+// mesh must be a
+function draw_color(mesh, color) {
+    /*
+    * param: mesh: dictionary object with keys:
+    *   points: array of points that make up the mesh
+    *   normals: array of normals of the mesh
+     */
+    let fragColors = [];
+
+    for(let i = 0; i < mesh.points.length; i++)
+    {
+        fragColors.push(color);
+    }
+
+    // buffer vertices
+    let pBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(mesh.points), gl.STATIC_DRAW);
+    let vPosition = gl.getAttribLocation(program,  "vPosition");
+    gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPosition);
+
+    // buffer normals
+    let nBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, nBuffer);
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(mesh.normals), gl.STATIC_DRAW );
+    let vNormal = gl.getAttribLocation( program, "vNormal" );
+    gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vNormal);
+
+    // buffer color
+    let cBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fragColors), gl.STATIC_DRAW);
+    let vColor= gl.getAttribLocation(program,  "vColor");
+    gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vColor);
+
+    gl.uniform1i(gl.getUniformLocation(program, "isLighting"), 0);
+    gl.uniform1f(gl.getUniformLocation(program, "isTexture"), 0.0);
+
+    gl.drawArrays( gl.TRIANGLES, 0, mesh.points.length );
+}
+
+// mesh must be a
+function draw_mat(mesh, material) {
+    /*
+    * param: mesh: dictionary object with keys:
+    *   points: array of points that make up the mesh
+    *   normals: array of normals of the mesh
+     */
+    let fragColors = [];
+    let texCoords = [];
+
+    for(let i = 0; i < mesh.points.length; i++)
+    {
+        fragColors.push(vec4(0.0, 0.0, 0.0, 0.0));
+        texCoords.push(vec4(0.0, 0.0, 0.0, 0.0));
+    }
+
+    if (lightMode === 'flat') {
         mesh.normals = [];
 
         for(let i = 0; i < mesh.face_normals.length; i ++) {
@@ -409,7 +519,7 @@ function draw(mesh, material) {
         mesh.normals = mesh.normals.flat();
 
     }
-    else if (lightMode == 'gourand') {
+    else if (lightMode === 'gourand') {
     }
     else{
         console.log('Invalid Lighting Mode');
@@ -431,6 +541,24 @@ function draw(mesh, material) {
     gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vNormal);
 
+    // buffer color
+    let cBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(fragColors), gl.STATIC_DRAW);
+    let vColor= gl.getAttribLocation(program,  "vColor");
+    gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vColor);
+
+    // buffer texture
+    let tBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, tBuffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(texCoords), gl.STATIC_DRAW );
+
+    let vTexCoord = gl.getAttribLocation( program, "vTexCoord" );
+    gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vTexCoord );
+
+    // Calculate and buffer lighting
     let diffuseProduct = mult(lightDiffuse, material.materialDiffuse);
     let specularProduct = mult(lightSpecular, material.materialSpecular);
     let ambientProduct = mult(lightAmbient, material.materialAmbient);
@@ -440,8 +568,9 @@ function draw(mesh, material) {
     gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
     gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
 
-
-    gl.uniform1i(gl.getUniformLocation(program, "isMesh"), 1);
+    // shader Flags
+    gl.uniform1i(gl.getUniformLocation(program, "isLighting"), 1);
+    gl.uniform1f(gl.getUniformLocation(program, "isTexture"), 0.0);
     gl.uniform1f(gl.getUniformLocation(program, "spotSize"), spotSize);
 
     gl.drawArrays( gl.TRIANGLES, 0, mesh.points.length );
@@ -469,4 +598,41 @@ function newell(v1, v2, v3) {
 
     let normal = normalize(vec3(n1,n2,n3), false);
     return vec4(normal[0], normal[1], normal[2], 0.0);
+}
+
+/*
+Textures
+
+ */
+
+let texture;
+
+
+function createATexture() {
+    let tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 2, 2, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+        new Uint8Array([0, 0, 255, 255, 255, 0, 0, 255, 0, 0, 255, 255, 0, 0, 255, 255]));
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+}
+
+function configureTexture(image, num) {
+    texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    gl.uniform1i(gl.getUniformLocation(program, "tex" + num.toString()), num);
+
 }
