@@ -59,7 +59,7 @@
             vec4 diffuse =  vec4(0, 0, 0, 0);  // diffuse light
             vec4 specular = vec4(0, 0, 0, 0); // specular light
 
-            vec3 lightDir = normalize(vec3(-1, -1, -2.2));
+            vec3 lightDir = normalize(vec3(-1, -1, -1));
 
             float spotLight = 1.0-spotSize;
             if(dot(L, -lightDir) > spotLight) {

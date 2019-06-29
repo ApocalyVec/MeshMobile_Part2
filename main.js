@@ -15,10 +15,10 @@ var modelView, projection;
 let transformStack = [];
 
 // light related globals
-let lightPosition = vec4(15.0, 15.0, 20.0, 0.0 );  // position if the light source
-var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
-var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
-var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
+let lightPosition = vec4(0.0, -0.0, 10.0, 0.0 );  // position if the light source
+let lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
+let lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
+let lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
 let mat_jade = {materialAmbient: vec4(0.135, 0.2225, 0.1575, 1.0 ),
     materialDiffuse: vec4(0.5, 0.89, 0.63, 1.0 ),
@@ -55,7 +55,7 @@ let mat_turquoise = {materialAmbient: vec4(0.1, 0.18725, 0.1745, 1.0 ),
     materialShininess: 0.1};
 
 let lightMode = 'flat';
-let spotSize = 0.01;
+let spotSize = 1;
 
 // Texture related globals
 let theta = [45.0, 45.0, 45.0];
@@ -220,9 +220,9 @@ function render()
 
     // eye coordinates
     let eye;
-    let at = vec3(0.0,-.8, -.8);
-    let up = vec3(0.0, 1.0, 0.0);
-    eye = vec3(0.0, 6.0, 15.0);
+    let at = vec3(0.0, 1.0, -.4);
+    let up = vec3(0.0, 2.0, 0.0);
+    eye = vec3(0.0, 3.0, 19.0);
     mvMatrix = lookAt(eye, at , up);
 
 
@@ -236,7 +236,7 @@ function render()
     let cube21InitTransformM =rotateY(cube3RotAngle);
     let cube22InitTransformM =rotateY(cube4RotAngle);
 
-    let bgScale = 15;
+    let bgScale = 30;
     let bgTransformM = mat4(
         bgScale,0,0,0,
         0,bgScale,0,0,
@@ -244,7 +244,7 @@ function render()
         0,0,0,1
     );
 
-    bgTransformM = mult(bgTransformM, translate(0.0, 0.2, 0.0));
+    bgTransformM = mult(bgTransformM, translate(0.0, 0.1, -0.3));
 
     let floorRotateM = rotateY(45);
     let leftWallRotateM = mult(mult(rotateX(90), rotateZ(-45)), rotateY(90));
@@ -252,7 +252,7 @@ function render()
 
 
     let hie1X = 0.0;
-    let hie1Y = 4.0;
+    let hie1Y = 6.0;
 
     let hie11X = 3.0;
     let hie11Y = -3.0;
@@ -340,7 +340,7 @@ function render()
         transformStack.push(mvMatrix); // matrix 1 saved
             mvMatrix = mult(mvMatrix, tetra1InitTransformM);
             gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-            draw_mat(tetra1, mat_pearl, mvMatrix);
+            draw_mat(tetra1, mat_pearl, mvMatrix, mult(mvMatrix, vec4(0.0, 0.0, 0.0, 1.0)));
 
     mvMatrix = transformStack.pop(); // matrix 1 retrieved
 
@@ -355,7 +355,7 @@ function render()
             transformStack.push(mvMatrix); //matrix 11 saved
                 mvMatrix = mult(mvMatrix, tetra2InitTransformM);
                 gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                draw_mat(tetra2, mat_jade, mvMatrix);
+                draw_mat(tetra2, mat_jade, mvMatrix, mult(mvMatrix, vec4(0.0, 0.0, 0.0, 1.0)));
 
     mvMatrix = transformStack.pop(); // matrix 11 retrieved
 
@@ -364,7 +364,7 @@ function render()
                     transformStack.push(mvMatrix); // matrix 111 saved
                         mvMatrix = mult(mvMatrix, cube11InitTransformM);
                         gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                        draw_mat(redCube, mat_obsidian, mvMatrix);
+                        draw_mat(redCube, mat_obsidian, mvMatrix, mult(mvMatrix, vec4(0.0, 0.0, 0.0, 1.0)));
                 mvMatrix = transformStack.pop(); // matrix 111 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 11 retrieved
@@ -376,7 +376,7 @@ function render()
 
                         mvMatrix = mult(mvMatrix, cube12InitTransformM);
                         gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                        draw_mat(magentaCube, mat_chrome, mvMatrix);
+                        draw_mat(magentaCube, mat_chrome, mvMatrix, mult(mvMatrix, vec4(0.0, 0.0, 0.0, 1.0)));
                 mvMatrix = transformStack.pop(); // matrix 113 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 11 retrieved
@@ -392,7 +392,7 @@ function render()
             transformStack.push(mvMatrix); //matrix 12 saved
                 mvMatrix = mult(mvMatrix, tetra3InitTransformM);
                 gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                draw_mat(tetra3, mat_ruby, mvMatrix);
+                draw_mat(tetra3, mat_ruby, mvMatrix, mult(mvMatrix, vec4(0.0, 0.0, 0.0, 1.0)));
 
             mvMatrix = transformStack.pop(); // matrix 12 retrieved
 
@@ -403,7 +403,7 @@ function render()
 
                     mvMatrix = mult(mvMatrix, cube21InitTransformM);
                     gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                    draw_mat(blueCube, mat_turquoise, mvMatrix);
+                    draw_mat(blueCube, mat_turquoise, mvMatrix, mult(mvMatrix, vec4(0.0, 0.0, 0.0, 1.0)));
                 mvMatrix = transformStack.pop(); // matrix 121 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 12 retrieved
@@ -415,7 +415,7 @@ function render()
 
                     mvMatrix = mult(mvMatrix, cube22InitTransformM);
                     gl.uniformMatrix4fv( modelView, false, flatten(mvMatrix) );
-                    draw_mat(cube4, mat_brass, mvMatrix);
+                    draw_mat(cube4, mat_brass, mvMatrix, mult(mvMatrix, vec4(0.0, 0.0, 0.0, 1.0)));
                 mvMatrix = transformStack.pop(); // matrix 122 retrieved
 
             mvMatrix = transformStack.pop(); // matrix 12 retrieved
@@ -553,7 +553,7 @@ function draw_color(mesh, color) {
 }
 
 // mesh must be a
-function draw_mat(mesh, material, modelViewMatrix) {
+function draw_mat(mesh, material, modelViewMatrix, meshPosition) {
     /*
     * param: mesh: dictionary object with keys:
     *   points: array of points that make up the mesh
@@ -644,8 +644,10 @@ function draw_mat(mesh, material, modelViewMatrix) {
     meshShadowM = mult(meshShadowM, shadowM);
     meshShadowM = mult(meshShadowM, translate(-lightPosition[0], -lightPosition[1], -lightPosition[2]));
 
-    modelViewMatrix = mult(modelViewMatrix, meshShadowM);
+    let shadowTransM = translate(meshPosition[0], 0.0, -8.0);
 
+    modelViewMatrix = mult(shadowTransM, mult(modelViewMatrix, meshShadowM));
+    // modelViewMatrix = mult(modelViewMatrix, meshShadowM);
 
     gl.uniformMatrix4fv( modelView, false, flatten(modelViewMatrix) );
     // buffer color
@@ -655,8 +657,9 @@ function draw_mat(mesh, material, modelViewMatrix) {
     vColor= gl.getAttribLocation(program,  "vColor");
     gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vColor);
-    gl.drawArrays(gl.TRIANGLE_FAN, 0, mesh.points.length);
-
+    if (isShadow) {
+        gl.drawArrays(gl.TRIANGLE_FAN, 0, mesh.points.length);
+    }
 }
 
 function newell(v1, v2, v3) {
@@ -684,7 +687,7 @@ function newell(v1, v2, v3) {
 }
 
 /*
-Textures
+Textures related functions
 
  */
 
