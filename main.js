@@ -93,15 +93,27 @@ let vertexColors = [
     vec4( 0.0, 1.0, 1.0, 1.0 )   // cyan
 ];
 
+// reflection and refraction
+let cubeMap;
+let isRefl = 0.0;
+let isRefra = 0.0;
+
 // shadow globals
 let isShadow = true;
-// shadow logic
 let shadowM;
+
+// colors
+let red = new Uint8Array([255, 0, 0, 255]);
+let blue = new Uint8Array([0, 0, 255, 255]);
+let green = new Uint8Array([0, 255, 0, 255]);
+let cyan = new Uint8Array([0, 255, 255, 255]);
+let magenta = new Uint8Array([255, 0, 255, 255]);
+let yellow = new Uint8Array([255, 255, 0, 255]);
 
 function main()
 {
 	// Retrieve <canvas> element
-	var canvas = document.getElementById('webgl');
+    let canvas = document.getElementById('webgl');
 
 	// Get the rendering context for WebGL
     gl = WebGLUtils.setupWebGL(canvas);
@@ -157,7 +169,30 @@ function main()
             isShadow = ! isShadow;
             console.log('toggling shadow: ' + isShadow);
         }
+        if (e.key === 'c') {
+            if (isRefl === 1.0) {
+                isRefl = 0.0;
+            }
+            else {
+                isRefl = 1.0;
+            }
+            gl.uniform1f(gl.getUniformLocation(program, "isRefl"), isRefl);
+            console.log('toggling reflection: ' + isRefl);
+        }
+        if (e.key === 'd') {
+            if (isRefra === 1.0) {
+                isRefra = 0.0;
+            }
+            else {
+                isRefra = 1.0;
+            }
+            gl.uniform1f(gl.getUniformLocation(program, "isRefra"), isRefra);
+            console.log('toggling refraction: ' + isRefra);
+        }
     });
+    gl.uniform1f(gl.getUniformLocation(program, "isRefl"), isRefl);
+    gl.uniform1f(gl.getUniformLocation(program, "isRefra"), isRefra);
+
 
     // Textures
     createATexture();
@@ -179,6 +214,18 @@ function main()
     shadowM = mat4(); // default to an identity matrix
     shadowM[3][3] = 0;
     shadowM[3][2] = -1/lightPosition[2];
+
+    // texture for reflection and refraction
+    configureCubeMap();
+
+    var image = new Image();
+    image.crossOrigin = "";
+    image.src = "https://web.cs.wpi.edu/~jmcuneo/a.jpg";
+
+    image.onload = function() {
+        configureCubeMapImage(image);
+    };
+
 
     render();
 }
@@ -624,7 +671,7 @@ function draw_mat(mesh, material, modelViewMatrix, meshPosition) {
     let specularProduct = mult(lightSpecular, material.materialSpecular);
     let ambientProduct = mult(lightAmbient, material.materialAmbient);
 
-    gl.uniform1f(gl.getUniformLocation(program, "materialShininess"), material.materialShininess);
+    gl.uniform1f(gl.getUniformLocation(program, "materialShininess"), 10.0);
     gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
     gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
     gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
@@ -658,7 +705,14 @@ function draw_mat(mesh, material, modelViewMatrix, meshPosition) {
     gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vColor);
     if (isShadow) {
+        // turn off reflection and refraction for shadows
+        gl.uniform1f(gl.getUniformLocation(program, "isRefl"), 0.0);
+        gl.uniform1f(gl.getUniformLocation(program, "isRefra"), 0.0);
+
         gl.drawArrays(gl.TRIANGLE_FAN, 0, mesh.points.length);
+
+        gl.uniform1f(gl.getUniformLocation(program, "isRefl"), isRefl);
+        gl.uniform1f(gl.getUniformLocation(program, "isRefra"), isRefra);
     }
 }
 
@@ -705,6 +759,7 @@ function createATexture() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 }
 
+
 function configureTexture(image, num) {
     texture = gl.createTexture();
     if(num === 0) {
@@ -728,5 +783,57 @@ function configureTexture(image, num) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     gl.uniform1i(gl.getUniformLocation(program, "tex" + num.toString()), num);
+
+}
+
+// Texture used for reflection and refraction
+function configureCubeMap() {
+    // initialization
+    cubeMap = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE3);
+
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);  // this is to deal with case when our vertex coord is outside the image given
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    //Create a 2x2 texture
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, red);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, blue);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, green);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, yellow);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, cyan);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, magenta);
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl. TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl. TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    gl.uniform1i(gl.getUniformLocation(program, "texMap"), 3);
+
+}
+
+// Texture used for reflection and refraction
+function configureCubeMapImage(image) {
+    // initialization
+    cubeMap = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE4);
+
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);  // this is to deal with case when our vertex coord is outside the image given
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    //Create a 2x2 texture
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl. TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl. TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    gl.uniform1i(gl.getUniformLocation(program, "texMap"), 4);
 
 }

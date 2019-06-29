@@ -7,6 +7,8 @@ Press 'P': to decrease spotlight cut off angle
 Press 'm': render the scene with Gouraud shading
 Press 'M': render the scene with flat shading
 
+Press 'A': to toggle shadow
+
 ## Material
 reference : http://devernay.free.fr/cours/opengl/materials.html
 

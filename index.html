@@ -24,13 +24,26 @@
 
     // texture
     uniform vec3 theta;
+
     uniform float isTexture;
     varying float fisTexture;
+
     attribute vec2 vTexCoord;
     varying vec2 fTexCoord;
 
     uniform float texNum;
     varying float ftexNum;
+
+    // reflection from cubeMap
+    varying vec3 refl;
+    varying vec3 refra;
+
+
+    uniform float isRefl;
+    varying float fisRefl;
+
+    uniform float isRefra;
+    varying float fisRefra;
 
 	void main() {
 
@@ -44,7 +57,11 @@
 		gl_Position = projectionMatrix * modelMatrix * vPosition;	// Point position
   		gl_PointSize = 10.0;		// Point size
 
-        fisTexture = isTexture; // pass flag to the fragment shader
+        // pass flag to the fragment shader
+        fisTexture = isTexture;
+        fisRefl = isRefl; // pass flag to the fragment shader
+        fisRefra = isRefra; // pass flag to the fragment shader
+
         ftexNum = texNum;
 
         if (isLighting == 1) {
@@ -53,7 +70,12 @@
             vec3 L = normalize(lightPosition.xyz - pos);
             vec3 V = normalize(-pos);
             vec3 N = normalize((modelMatrix * vNormal).xyz);
-            vec3 R = ((2.0) * dot(L, N) * N) - L;
+            vec3 R = ((2.0) * dot(L, N) * N) - L;  // reflection
+
+            //Environment Map Reflection
+	        refl = reflect(pos, N);
+	        refra = refract(pos, N, 0.99);
+
 
             vec4 ambient = ambientProduct;  // ambient light
             vec4 diffuse =  vec4(0, 0, 0, 0);  // diffuse light
@@ -92,20 +114,36 @@
     uniform sampler2D tex0;
     uniform sampler2D tex1;
 
+    // reflection and refraction texture map
+    uniform samplerCube texMap;
+    varying float fisRefl;
+    varying float fisRefra;
+
+    varying vec3 refl;
+    varying vec3 refra;
+
 	void main()
 	{
-        if (fisTexture > 0.5) {
-            if (ftexNum == 0.0) {
-                gl_FragColor =  texture2D(tex0, fTexCoord);	// Point color
+        if (fisTexture > 0.5) {  // if texture is on
+            if (ftexNum == 0.0) { // if texture 0 is on
+                gl_FragColor =  texture2D(tex0, fTexCoord);
 
             }
-            else if (ftexNum == 1.0) {
-                gl_FragColor =  texture2D(tex1, fTexCoord);	// Point color
-
+            else if (ftexNum == 1.0) { //if texture 0 is on
+                gl_FragColor =  texture2D(tex1, fTexCoord);
             }
         }
         else {
-            gl_FragColor = fColor;	// Point color
+            gl_FragColor = fColor;
+
+            if (fisRefl > 0.5) { // if reflection is on
+                gl_FragColor = textureCube(texMap, refl) * gl_FragColor;
+            }
+            else if (fisRefra > 0.5){
+                gl_FragColor = textureCube(texMap, refra) * gl_FragColor;
+
+            }
+
         }
 
   	}
